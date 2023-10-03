@@ -4,6 +4,7 @@ package store
 
 import (
 	"encoding/json"
+	"errors"
 
 	client "github.com/alexbavinton/home-automation/device-store/pkg/client"
 	"github.com/gomodule/redigo/redis"
@@ -14,6 +15,10 @@ type Store interface {
 	CreateDevice(device client.Device) error
 	GetDevice(id string) (client.Device, error)
 	DeleteDevice(id string) error
+	GetDevicesByType(deviceType string) ([]client.Device, error)
+	GetDevices() ([]client.Device, error)
+	GetDeviceTypes() ([]string, error)
+	Close() error
 }
 
 // DeviceStore is a redis implementation of the Store interface
@@ -32,20 +37,53 @@ func (s *DeviceStore) CreateDevice(device client.Device) error {
 	if err != nil {
 		return err
 	}
-	s.conn.Do("JSON.SET", "device:"+device.ID, ".", deviceJson)
-	s.conn.Do("SADD", "devices", device.ID)
-	s.conn.Do("SADD", "device-types", device.Type)
-	s.conn.Do("SADD", "device-type:"+device.Type, device.ID)
-	err = s.conn.Flush()
-	return err
+	s.conn.Send("JSON.SET", "device:"+device.ID, ".", string(deviceJson))
+	s.conn.Send("SADD", "devices", device.ID)
+	s.conn.Send("SADD", "device-types", device.Type)
+	s.conn.Send("SADD", "device-type:"+device.Type, device.ID)
+	return s.conn.Flush()
 }
 
 // GetDevice retrieves a device from redis
 func (s *DeviceStore) GetDevice(id string) (client.Device, error) {
-	panic("not implemented")
+	deviceJson, err := s.conn.Do("JSON.GET", "device:"+id)
+	if err != nil {
+		return client.Device{}, err
+	}
+	deviceJsonStr, ok := deviceJson.(string)
+	if !ok {
+		return client.Device{}, errors.New("device json not of type string")
+	}
+
+	var device client.Device
+	err = json.Unmarshal([]byte(deviceJsonStr), &device)
+	if err != nil {
+		return client.Device{}, err
+	}
+	return device, nil
 }
 
 // DeleteDevice deletes a device from redis
 func (s *DeviceStore) DeleteDevice(id string) error {
 	panic("not implemented")
+}
+
+// GetDevicesByType retrieves all devices of a given type from redis
+func (s *DeviceStore) GetDevicesByType(deviceType string) ([]client.Device, error) {
+	panic("not implemented")
+}
+
+// GetDevices retrieves all devices from redis
+func (s *DeviceStore) GetDevices() ([]client.Device, error) {
+	panic("not implemented")
+}
+
+// GetDeviceTypes retrieves all device types from redis
+func (s *DeviceStore) GetDeviceTypes() ([]string, error) {
+	panic("not implemented")
+}
+
+// Close closes the redis connection
+func (s *DeviceStore) Close() error {
+	return s.conn.Close()
 }
