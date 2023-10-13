@@ -1,4 +1,4 @@
-package handlers
+package service
 
 import (
 	"encoding/json"
@@ -10,22 +10,18 @@ import (
 
 // Package handlers provides http handlers for the device-store service
 
-// CreateDevicer is an interface for creating devices
-type CreateDevicer interface {
+// createDevicer is an interface for creating devices
+type createDevicer interface {
 	CreateDevice(device client.Device) error
 }
 
-// CreateDeviceHandler returns an http handler for creating devices
-func CreateDeviceHandler(store CreateDevicer) http.HandlerFunc {
+// createDeviceHandler returns an http handler for creating devices
+func createDeviceHandler(store createDevicer) http.HandlerFunc {
+	validate := validator.New(validator.WithRequiredStructEnabled())
 	return func(w http.ResponseWriter, r *http.Request) {
 		var device client.Device
-		err := json.NewDecoder(r.Body).Decode(&device)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		validate := validator.New(validator.WithRequiredStructEnabled())
-		err = validate.Struct(device)
+		json.NewDecoder(r.Body).Decode(&device)
+		err := validate.Struct(device)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return

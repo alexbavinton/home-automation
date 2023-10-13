@@ -1,4 +1,4 @@
-package handlers
+package service
 
 import (
 	"bytes"
@@ -11,12 +11,12 @@ import (
 	client "github.com/alexbavinton/home-automation/device-store/pkg/client"
 )
 
-type MockStore struct {
+type mockCreateDevicer struct {
 	called     bool
 	calledWith client.Device
 }
 
-func (m *MockStore) CreateDevice(device client.Device) error {
+func (m *mockCreateDevicer) CreateDevice(device client.Device) error {
 	m.called = true
 	m.calledWith = device
 	return nil
@@ -24,9 +24,9 @@ func (m *MockStore) CreateDevice(device client.Device) error {
 
 func TestCreateDeviceHandler(t *testing.T) {
 	t.Run("Responds with 400 if device is invalid shape", func(t *testing.T) {
-		mockCreateDevice := MockStore{}
+		mockCreateDevice := mockCreateDevicer{}
 
-		handler := CreateDeviceHandler(&mockCreateDevice)
+		handler := createDeviceHandler(&mockCreateDevice)
 
 		req := httptest.NewRequest("PUT", "/device", bytes.NewBuffer([]byte(`{"name": "bar"}`)))
 		res := httptest.NewRecorder()
@@ -40,9 +40,9 @@ func TestCreateDeviceHandler(t *testing.T) {
 	})
 
 	t.Run("Calls CreateDevice on store with device", func(t *testing.T) {
-		mockCreateDevice := MockStore{}
+		mockCreateDevice := mockCreateDevicer{}
 
-		handler := CreateDeviceHandler(&mockCreateDevice)
+		handler := createDeviceHandler(&mockCreateDevice)
 
 		device := client.Device{
 			ID:          "1",
@@ -53,7 +53,7 @@ func TestCreateDeviceHandler(t *testing.T) {
 
 		deviceJson, _ := json.Marshal(device)
 
-		req := httptest.NewRequest("PUT", "/devices", bytes.NewBuffer(deviceJson))
+		req := httptest.NewRequest("POST", "/devices", bytes.NewBuffer(deviceJson))
 		res := httptest.NewRecorder()
 
 		handler(res, req)

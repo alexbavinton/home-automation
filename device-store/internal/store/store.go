@@ -46,17 +46,13 @@ func (s *DeviceStore) CreateDevice(device client.Device) error {
 
 // GetDevice retrieves a device from redis
 func (s *DeviceStore) GetDevice(id string) (client.Device, error) {
-	deviceJson, err := s.conn.Do("JSON.GET", "device:"+id)
+	deviceJson, err := redis.Bytes(s.conn.Do("JSON.GET", "device:"+id))
 	if err != nil {
-		return client.Device{}, err
-	}
-	deviceJsonStr, ok := deviceJson.(string)
-	if !ok {
-		return client.Device{}, errors.New("device json not of type string")
+		return client.Device{}, errors.New("device not found")
 	}
 
 	var device client.Device
-	err = json.Unmarshal([]byte(deviceJsonStr), &device)
+	err = json.Unmarshal(deviceJson, &device)
 	if err != nil {
 		return client.Device{}, err
 	}
