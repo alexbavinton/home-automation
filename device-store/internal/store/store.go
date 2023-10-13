@@ -71,13 +71,34 @@ func (s *DeviceStore) DeleteDevice(id string) error {
 	return s.conn.Flush()
 }
 
-// GetDevicesByType retrieves all devices of a given type from redis
-func (s *DeviceStore) GetDevicesByType(deviceType string) ([]client.Device, error) {
-	panic("not implemented")
-}
-
 // GetDevices retrieves all devices from redis
 func (s *DeviceStore) GetDevices() ([]client.Device, error) {
+	deviceIds, err := redis.Strings(s.conn.Do("SMEMBERS", "devices"))
+	if err != nil {
+		return []client.Device{}, err
+	}
+	// Could use pipeline here
+	for _, id := range deviceIds {
+		s.conn.Send("JSON.GET", "device:"+id)
+	}
+	deviceJsons, err := redis.ByteSlices(s.conn.Do(""))
+	if err != nil {
+		return []client.Device{}, err
+	}
+	var devices []client.Device
+	for _, deviceJson := range deviceJsons {
+		var device client.Device
+		err = json.Unmarshal(deviceJson, &device)
+		if err != nil {
+			return []client.Device{}, err
+		}
+		devices = append(devices, device)
+	}
+	return devices, nil
+}
+
+// GetDevicesByType retrieves all devices of a given type from redis
+func (s *DeviceStore) GetDevicesByType(deviceType string) ([]client.Device, error) {
 	panic("not implemented")
 }
 

@@ -161,3 +161,53 @@ func TestDeleteDevice(t *testing.T) {
 		}
 	})
 }
+
+func TestGetDevices(t *testing.T) {
+	t.Run("Returns all devices", func(t *testing.T) {
+		conn := redigomock.NewConn()
+		device1 := client.Device{
+			ID:          "1",
+			Name:        "bulb-1",
+			Description: "a bulb",
+			Type:        "bulb",
+		}
+		device2 := client.Device{
+			ID:          "2",
+			Name:        "bulb-2",
+			Description: "a bulb",
+			Type:        "bulb",
+		}
+		want := []client.Device{device1, device2}
+
+		device1Json, _ := json.Marshal(device1)
+		device2Json, _ := json.Marshal(device2)
+
+		store := NewDeviceStore(conn)
+
+		getDevicesCommand := conn.Command("SMEMBERS", "devices").Expect([]interface{}{"1", "2"})
+		getDevice1Command := conn.Command("JSON.GET", "device:1").Expect(device1Json)
+		getDevice2Command := conn.Command("JSON.GET", "device:2").Expect(device2Json)
+
+		got, err := store.GetDevices()
+
+		if err != nil {
+			t.Errorf("Unexpected error: %v", err)
+		}
+
+		if conn.Stats(getDevicesCommand) != 1 {
+			t.Errorf("Expected 1 call to JSON.GET, got %d", conn.Stats(getDevicesCommand))
+		}
+
+		if conn.Stats(getDevice1Command) != 1 {
+			t.Errorf("Expected 1 call to JSON.GET, got %d", conn.Stats(getDevice1Command))
+		}
+
+		if conn.Stats(getDevice2Command) != 1 {
+			t.Errorf("Expected 1 call to JSON.GET, got %d", conn.Stats(getDevice2Command))
+		}
+
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("Expected %v, got %v", want, got)
+		}
+	})
+}
