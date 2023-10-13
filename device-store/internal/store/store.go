@@ -77,12 +77,14 @@ func (s *DeviceStore) GetDevices() ([]client.Device, error) {
 	if err != nil {
 		return []client.Device{}, err
 	}
-	// Could use pipeline here
 	for _, id := range deviceIds {
 		s.conn.Send("JSON.GET", "device:"+id)
 	}
 	deviceJsons, err := redis.ByteSlices(s.conn.Do(""))
 	if err != nil {
+		if err == redis.ErrNil {
+			return []client.Device{}, nil
+		}
 		return []client.Device{}, err
 	}
 	var devices []client.Device

@@ -210,4 +210,26 @@ func TestGetDevices(t *testing.T) {
 			t.Errorf("Expected %v, got %v", want, got)
 		}
 	})
+
+	t.Run("Returns empty slice if no devices", func(t *testing.T) {
+		conn := redigomock.NewConn()
+		want := []client.Device{}
+
+		store := NewDeviceStore(conn)
+
+		getDevicesCommand := conn.Command("SMEMBERS", "devices").Expect([]interface{}{})
+		got, err := store.GetDevices()
+
+		if err != nil {
+			t.Errorf("Unexpected error: %v", err)
+		}
+
+		if conn.Stats(getDevicesCommand) != 1 {
+			t.Errorf("Expected 1 call to JSON.GET, got %d", conn.Stats(getDevicesCommand))
+		}
+
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("Expected %v, got %v", want, got)
+		}
+	})
 }
