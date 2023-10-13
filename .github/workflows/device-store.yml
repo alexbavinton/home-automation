@@ -5,6 +5,7 @@ on:
       - main
     paths:
       - device-store/**
+      - .github/workflows/device-store.yml
 
 
 jobs:
