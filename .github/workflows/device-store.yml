@@ -39,11 +39,12 @@ jobs:
       - name: Docker login
         run:  echo ${{ secrets.DOCKERHUB_PASSWORD }} | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
       - name: Build image
-        run: make build-image
-        env: 
-          DOCKER_TAG: ${{ github.ref_name }}
+        run: |
+          tag=$(echo ${{ github.ref_name }} | sed 's/\//-/g') 
+          export DOCKER_TAG=$tag
+          make build-image
       - name: Push image
         run: |
           tag=$(echo ${{ github.ref_name }} | sed 's/\//-/g')
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/home-automation:$tag
+          docker push "${{ secrets.DOCKERHUB_USERNAME }}/home-automation:$tag"
           
