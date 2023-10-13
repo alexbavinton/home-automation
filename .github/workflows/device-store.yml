@@ -47,6 +47,6 @@ jobs:
         run: |
           tag=$(echo ${{ github.ref_name }} | sed 's/\//-/g')
           echo "Pushing image with tag $tag"
-          echo "${{ secrets.DOCKERHUB_USERNAME }}/home-automation:$tag"
-          # docker push "${{ secrets.DOCKERHUB_USERNAME }}/home-automation:$tag"
+          image_path="${{ secrets.DOCKERHUB_USERNAME }}/home-automation:$tag"
+          docker push $image_path
           
