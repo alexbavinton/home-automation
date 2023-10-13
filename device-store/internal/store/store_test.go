@@ -2,6 +2,7 @@ package store
 
 import (
 	"encoding/json"
+	"errors"
 	"reflect"
 	"testing"
 
@@ -9,8 +10,8 @@ import (
 	"github.com/rafaeljusto/redigomock"
 )
 
-func TestDeviceStore(t *testing.T) {
-	t.Run("CreateDevice", func(t *testing.T) {
+func TestCreateDevice(t *testing.T) {
+	t.Run("Creates device and adds device to sets", func(t *testing.T) {
 		conn := redigomock.NewConn()
 		device := client.Device{
 			ID:          "1",
@@ -49,7 +50,10 @@ func TestDeviceStore(t *testing.T) {
 		}
 	})
 
-	t.Run("GetDevice", func(t *testing.T) {
+}
+
+func TestGetDevice(t *testing.T) {
+	t.Run("Returns device if exists", func(t *testing.T) {
 		conn := redigomock.NewConn()
 		want := client.Device{
 			ID:          "1",
@@ -74,6 +78,26 @@ func TestDeviceStore(t *testing.T) {
 
 		if !reflect.DeepEqual(got, want) {
 			t.Errorf("Expected %v, got %v", want, got)
+		}
+	})
+
+	t.Run("Returns error if device does not exist", func(t *testing.T) {
+		conn := redigomock.NewConn()
+
+		getDeviceCommand := conn.Command("JSON.GET", "device:1").Expect(nil)
+		store := NewDeviceStore(conn)
+		_, err := store.GetDevice("1")
+
+		if err == nil {
+			t.Errorf("Expected error %v, got %v", errors.New("device not found"), err)
+		}
+
+		if err.Error() != "device not found" {
+			t.Errorf("Expected error %v, got %v", errors.New("device not found"), err)
+		}
+
+		if conn.Stats(getDeviceCommand) != 1 {
+			t.Errorf("Expected 1 call to JSON.GET, got %d", conn.Stats(getDeviceCommand))
 		}
 	})
 }
