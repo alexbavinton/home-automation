@@ -12,6 +12,7 @@ import (
 type DeviceStore interface {
 	CreateDevice(device Device) error
 	GetDevice(id string) (Device, error)
+	DeleteDevice(id string) error
 }
 
 type DeviceStoreClient struct {
@@ -54,4 +55,19 @@ func (c *DeviceStoreClient) GetDevice(id string) (Device, error) {
 		return Device{}, err
 	}
 	return device, nil
+}
+
+func (c *DeviceStoreClient) DeleteDevice(id string) error {
+	req, err := http.NewRequest("DELETE", c.baseUrl+"/devices/"+id, nil)
+	if err != nil {
+		return err
+	}
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	if res.StatusCode != http.StatusNoContent {
+		return errors.New("unexpected status code")
+	}
+	return nil
 }
