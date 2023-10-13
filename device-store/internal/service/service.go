@@ -21,6 +21,7 @@ func Run(redisHost string, redisPort string) {
 	}).Methods("Get")
 	r.HandleFunc("/devices", createDeviceHandler(deviceStore)).Methods("POST")
 	r.HandleFunc("/devices/{id}", getDeviceHandler(deviceStore)).Methods("GET")
+	r.HandleFunc("/devices/{id}", deleteDeviceHandler(deviceStore)).Methods("DELETE")
 
 	http.Handle("/", r)
 	http.ListenAndServe(":8080", nil)
