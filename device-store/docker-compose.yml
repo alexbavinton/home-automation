@@ -2,7 +2,7 @@ version: "3.9"
 
 services:
   device-store:
-    image: device-store-test
+    image: device-store:latest
     environment:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
