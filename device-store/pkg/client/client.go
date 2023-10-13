@@ -13,6 +13,7 @@ type DeviceStore interface {
 	CreateDevice(device Device) error
 	GetDevice(id string) (Device, error)
 	DeleteDevice(id string) error
+	GetDevices() ([]Device, error)
 }
 
 type DeviceStoreClient struct {
@@ -70,4 +71,20 @@ func (c *DeviceStoreClient) DeleteDevice(id string) error {
 		return errors.New("unexpected status code")
 	}
 	return nil
+}
+
+func (c *DeviceStoreClient) GetDevices() ([]Device, error) {
+	res, err := http.Get(c.baseUrl + "/devices")
+	if err != nil {
+		return []Device{}, err
+	}
+	if res.StatusCode != http.StatusOK {
+		return []Device{}, errors.New("unexpected status code")
+	}
+	var devices []Device
+	err = json.NewDecoder(res.Body).Decode(&devices)
+	if err != nil {
+		return []Device{}, err
+	}
+	return devices, nil
 }
