@@ -46,6 +46,7 @@ jobs:
       - name: Push image
         run: |
           tag=$(echo ${{ github.ref_name }} | sed 's/\//-/g')
+          docker tag $tag ${{ secrets.DOCKERHUB_USERNAME }}/home-automation:$tag
           echo "Pushing image with tag $tag"
           image_path="${{ secrets.DOCKERHUB_USERNAME }}/home-automation:$tag"
           docker push $image_path
