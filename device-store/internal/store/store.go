@@ -61,7 +61,14 @@ func (s *DeviceStore) GetDevice(id string) (client.Device, error) {
 
 // DeleteDevice deletes a device from redis
 func (s *DeviceStore) DeleteDevice(id string) error {
-	panic("not implemented")
+	device, err := s.GetDevice(id)
+	if err != nil {
+		return err
+	}
+	s.conn.Send("JSON.DEL", "device:"+id, ".")
+	s.conn.Send("SREM", "devices", id)
+	s.conn.Send("SREM", "device-type:"+device.Type, id)
+	return s.conn.Flush()
 }
 
 // GetDevicesByType retrieves all devices of a given type from redis

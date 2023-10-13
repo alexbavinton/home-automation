@@ -101,3 +101,63 @@ func TestGetDevice(t *testing.T) {
 		}
 	})
 }
+
+func TestDeleteDevice(t *testing.T) {
+	t.Run("Deletes device and removes device from sets", func(t *testing.T) {
+		conn := redigomock.NewConn()
+		device := client.Device{
+			ID:          "1",
+			Name:        "bulb-1",
+			Description: "a bulb",
+			Type:        "bulb",
+		}
+
+		deviceJson, _ := json.Marshal(device)
+
+		getDeviceCommand := conn.Command("JSON.GET", "device:1").Expect(string(deviceJson))
+		deleteDeviceCommand := conn.Command("JSON.DEL", "device:1", ".").Expect("ok")
+		removeFromTypeCommand := conn.Command("SREM", "device-type:bulb", "1").Expect("ok")
+		removeFromDevicesCommand := conn.Command("SREM", "devices", "1").Expect("ok")
+		store := NewDeviceStore(conn)
+		err := store.DeleteDevice("1")
+
+		if err != nil {
+			t.Errorf("Unexpected error: %v", err)
+		}
+
+		if conn.Stats(getDeviceCommand) != 1 {
+			t.Errorf("Expected 1 call to JSON.GET, got %d", conn.Stats(getDeviceCommand))
+		}
+
+		if conn.Stats(deleteDeviceCommand) != 1 {
+			t.Errorf("Expected 1 call to DEL, got %d", conn.Stats(deleteDeviceCommand))
+		}
+
+		if conn.Stats(removeFromTypeCommand) != 1 {
+			t.Errorf("Expected 1 call to SREM, got %d", conn.Stats(removeFromTypeCommand))
+		}
+
+		if conn.Stats(removeFromDevicesCommand) != 1 {
+			t.Errorf("Expected 1 call to SREM, got %d", conn.Stats(removeFromDevicesCommand))
+		}
+	})
+	t.Run("Returns error if device does not exist", func(t *testing.T) {
+		conn := redigomock.NewConn()
+
+		getDeviceCommand := conn.Command("JSON.GET", "device:1").Expect(nil)
+		store := NewDeviceStore(conn)
+		err := store.DeleteDevice("1")
+
+		if err == nil {
+			t.Errorf("Expected error %v, got %v", errors.New("device not found"), err)
+		}
+
+		if err.Error() != "device not found" {
+			t.Errorf("Expected error %v, got %v", errors.New("device not found"), err)
+		}
+
+		if conn.Stats(getDeviceCommand) != 1 {
+			t.Errorf("Expected 1 call to JSON.GET, got %d", conn.Stats(getDeviceCommand))
+		}
+	})
+}
